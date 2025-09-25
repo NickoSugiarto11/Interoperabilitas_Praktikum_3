@@ -1,5 +1,4 @@
 require('dotenv').config(); // Load environment variables
-
 const sqlite3 = require('sqlite3').verbose(); // Import sqlite3
 
 // Ambil nama/path database dari .env, fallback ke "db.sqlite" jika tidak ada

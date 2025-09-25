@@ -1,7 +1,7 @@
 require('dotenv').config(); //Memanggil file .env
 const express = require('express'); //Mengimpor library express
 const cors = require('cors'); //Mengimpor library cors
-const db = require('./database'); //Mengimpor koneksi database
+const db = require('./database.js'); //Mengimpor koneksi database
 const app = express(); //Membuat aplikasi express
 const port = process.env.PORT || 3100; //Mengambil nilai dari variabel PORT di .env atau default 3100
 
@@ -13,23 +13,12 @@ let idSeq = 3;
 app.use(express.json());
 
 //Untuk menjalankan server
-app.listen(port, () => {
-  console.log(`Server berjalan di http://localhost:${port}`);
-});
-
-//Array movies
-// let movies = [
-//     {id: 1, title: 'The Shawshank Redemption', director: 'Nicko Sugiarto', year: 1994},
-//     {id: 2, title: 'The Godfather', director: 'Ferdy Sambo', year: 1972}, 
-//     {id: 3, title: 'The Dark Knight', director: 'Ultraman', year: 2008},
-// ];
-
-//Jika membuka localhost:3100 akan menampilkan pesan berikut
-
-// app.get('/', (req, res) => {
-//     res.send('Selamat datang di API Movies');
+// app.listen(port, () => {
+//   console.log(`Server berjalan di http://localhost:${port}`);
 // });
 
+
+// PRAKTIKUM 3
 
 // ##########################################################################################
 
@@ -72,6 +61,21 @@ app.listen(port, () => {
 
 
 // ##########################################################################################
+
+//PRAKTIKUM 2
+
+//Array movies
+// let movies = [
+//     {id: 1, title: 'The Shawshank Redemption', director: 'Nicko Sugiarto', year: 1994},
+//     {id: 2, title: 'The Godfather', director: 'Ferdy Sambo', year: 1972}, 
+//     {id: 3, title: 'The Dark Knight', director: 'Ultraman', year: 2008},
+// ];
+
+//Jika membuka localhost:3100 akan menampilkan pesan berikut
+
+// app.get('/', (req, res) => {
+//     res.send('Selamat datang di API Movies');
+// });
 
 // app.get('/movies', (req, res) => {
 //     res.json(movies);
@@ -183,3 +187,5 @@ app.listen(port, () => {
 //     console.error('[ERROR]', err);
 //     res.status(500).json({ error: 'Terjadi kesalahan pada server' });
 // });
+
+// ############################################################################################
