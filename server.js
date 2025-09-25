@@ -92,7 +92,7 @@ app.delete('/movies/:id', (req, res) => {
 
 //GET /directors - Mendapatkan semua directors
 app.get('/directors', (req, res) => {  // Endpoint untuk mendapatkan semua directors
-    const sql = "SELECT * FROM directors ORDER BY id ASC";
+    const sql = "SELECT * FROM directors ORDER BY id";
     db.all(sql, [], (err, rows) => {
         if (err) {
             res.status(400).json({"error": err.message});
@@ -174,15 +174,6 @@ app.listen(port, () => {
 //     {id: 3, title: 'The Dark Knight', director: 'Ultraman', year: 2008},
 // ];
 
-//Jika membuka localhost:3100 akan menampilkan pesan berikut
-
-// app.get('/', (req, res) => {
-//     res.send('Selamat datang di API Movies');
-// });
-
-// app.get('/movies', (req, res) => {
-//     res.json(movies);
-// });
 
 // //Array directors   
 // let directors = [
@@ -190,11 +181,5 @@ app.listen(port, () => {
 //     {id: 2, name: 'Francis Ford Coppola', birthYear: 1939},
 //     {id: 3, name: 'Christopher Nolan', birthYear: 1970},
 // ];
-
-// //Error handler terpusat
-// app.use((err, req, res, next) => {
-//     console.error('[ERROR]', err);
-//     res.status(500).json({ error: 'Terjadi kesalahan pada server' });
-// });
 
 // ############################################################################################
