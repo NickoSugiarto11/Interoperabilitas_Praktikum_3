@@ -1,7 +1,7 @@
 require('dotenv').config(); //Memanggil file .env
 const express = require('express'); //Mengimpor library express
 const cors = require('cors'); //Mengimpor library cors
-const db = require('./database.js'); //Mengimpor koneksi database
+const db = require('./database'); //Mengimpor koneksi database
 const app = express(); //Membuat aplikasi express
 const port = process.env.PORT || 3100; //Mengambil nilai dari variabel PORT di .env atau default 3100
 
@@ -26,6 +26,9 @@ app.get('/status', (req, res) => {  // Endpoint status
     res.json({status: 'OK', message: 'Server is Running', timestamp: new Date()});
 });
 
+//MOVIES API
+
+
 app.get('/movies', (req, res) => {  // Endpoint untuk mendapatkan semua film
     const sql = "SELECT * FROM movies ORDER BY id ASC";
     db.all(sql, [], (err, rows) => {
@@ -39,6 +42,31 @@ app.get('/movies', (req, res) => {  // Endpoint untuk mendapatkan semua film
 
 app.get('/movies/:id', (req, res) => {  // Endpoint untuk mendapatkan film berdasarkan ID
     const sql = "SELECT * FROM movies WHERE id = ?";
+    const params = [req.params.id];
+    db.get(sql, params, (err, row) => {
+        if (err) {
+            res.status(400).json({"error": err.message});
+            return;
+        }
+        res.json({"message":"success", "data":row});
+    });
+});
+
+//DIRECTORS API
+
+app.get('/directors', (req, res) => {  // Endpoint untuk mendapatkan semua directors
+    const sql = "SELECT * FROM directors ORDER BY id ASC";
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            res.status(400).json({"error": err.message});
+            return;
+        }
+        res.json({"message":"success", "data":rows});
+    });
+});
+
+app.get('/directors/:id', (req, res) => {  // Endpoint untuk mendapatkan director berdasarkan ID
+    const sql = "SELECT * FROM directors WHERE id = ?";
     const params = [req.params.id];
     db.get(sql, params, (err, row) => {
         if (err) {

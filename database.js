@@ -25,7 +25,7 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
                     console.log("Table 'movies' created. Seeding initial data...");
 
                     const insert =
-                        'INSERT INTO movies (title, director, year) VALUES (?,?,?)';
+                    'INSERT INTO movies (title, director, year) VALUES (?,?,?)';
 
                     db.run(insert, ["The Lord of the Rings", "Peter Jackson", 2001]);
                     db.run(insert, ["The Avengers", "Joss Whedon", 2012]);
@@ -37,5 +37,29 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
         );
     }
 });
+
+        // Buat tabel directors jika belum ada
+        db.run(
+            `CREATE TABLE IF NOT EXISTS directors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            birth_year INTEGER NOT NULL
+            )`,
+            (err) => {
+                if (!err) {
+                    console.log("Table 'directors' created. Seeding initial data...");
+                    
+                    const insert =
+                    'INSERT INTO directors (name, birth_year) VALUES (?,?)';
+                    
+                    db.run(insert, ["Peter Jackson", 1961]);
+                    db.run(insert, ["Joss Whedon", 1964]);
+                    db.run(insert, ["Sam Raimi", 1959]);
+                } else {
+                    console.log("Table 'directors' already exists.");
+                }
+            }
+        );
+
 
 module.exports = db; // Export koneksi database
