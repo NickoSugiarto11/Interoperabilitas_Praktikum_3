@@ -1,0 +1,83 @@
+{
+	"info": {
+		"_postman_id": "9ba41c47-28e6-4b1d-a7fa-202a8a87412e",
+		"name": "Praktikum 3",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "47979685",
+		"_collection_link": "https://nicko9995sgt-7994784.postman.co/workspace/Nicko-S.'s-Workspace~0dc937f0-6d4a-41fd-851f-bd2027d26543/collection/47979685-9ba41c47-28e6-4b1d-a7fa-202a8a87412e?action=share&source=collection_link&creator=47979685"
+	},
+	"item": [
+		{
+			"name": "All DIrectors",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Directors By Id",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Directors",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3300/directors",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3300",
+					"path": [
+						"directors"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Directors by Id",
+			"request": {
+				"method": "PUT",
+				"header": []
+			},
+			"response": []
+		},
+		{
+			"name": "Directors",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3300/directors/30",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3300",
+					"path": [
+						"directors",
+						"30"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
