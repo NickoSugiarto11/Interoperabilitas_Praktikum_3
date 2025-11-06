@@ -1,4 +1,4 @@
-# Praktikum 3
+# Praktikum AUTH
 
 ---
 
@@ -8,15 +8,10 @@
 
 ## Tujuan Tugas
 
-1. Mengaplikasikan keterampilan menghubungkan Express ke SQLite pada sumber daya baru.
-2. Memperkuat pemahaman tentang penulisan perintah SQL dan penanganan logika asinkron dengan callback.
+1. Mengaplikasikan middleware autentikasi pada serangkaian endpoint baru
+2. Memperkuat pemahaman tentang alur kerja autentikasi berbasis token.
 
 ---
 
 ## Kriteria Fungsionalitas
 
-1. Modifikasi Skema Basis Data:
-   - Buka file database.js dan tambahkan kode untuk membuat tabel directors jika belum ada (id, name, birthYear).
-2. Refactoring Endpoint Sutradara:
-   - Buka file server.js
-   - Modifikasi semua endpoint yang berhubungan dengan directors untuk menggunakan query SQL ke tabel directors.
