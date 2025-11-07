@@ -8,18 +8,14 @@
 
 ## Tujuan Tugas
 
-<<<<<<< HEAD
-1. Mengaplikasikan middleware autentikasi pada serangkaian endpoint baru.
-=======
+1. # Mengaplikasikan middleware autentikasi pada serangkaian endpoint baru.
 1. Mengaplikasikan middleware autentikasi pada serangkaian endpoint baru
->>>>>>> d7953a99b7111e2142e34adcff0c03bd05e74af1
-2. Memperkuat pemahaman tentang alur kerja autentikasi berbasis token.
+1. Memperkuat pemahaman tentang alur kerja autentikasi berbasis token.
 
 ---
 
 ## Instalasi
 
-<<<<<<< HEAD
 1. Install bcryptjs
 2. Ubah File .env dengan menambahkan `JWT_SECRET`
 3. Lalu jalankan server dengan `Nodemon server.js`
@@ -36,5 +32,3 @@
 7. POST /directors tambah data sutradara
 8. PUT /directors/:id update data sutradara
 9. DELETE /directors/:id hapus data sutradara
-=======
->>>>>>> d7953a99b7111e2142e34adcff0c03bd05e74af1
