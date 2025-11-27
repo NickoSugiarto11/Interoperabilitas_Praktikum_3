@@ -2,7 +2,7 @@ require('dotenv').config(); // Memanggil file .env
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
-const authenticateToken = require('./middleware/authMiddleware'); // Middleware autentikasi JWT
+const {authenticateToken, authorixeRole} = require('./middleware/auth.js'); // Middleware autentikasi JWT
 const express = require('express');
 const cors = require('cors');
 const db = require('./database'); // Koneksi database SQLite
@@ -92,6 +92,37 @@ app.delete('/movies/:id', authenticateToken, (req, res) => {
 });
 
 // =======================================================
+// AUTH REGISTER ADMIN
+// =======================================================
+
+app.post('/auth/register-admin', (req, res) => {
+  const {username, password} = req.body;
+  if(!username || !password)
+    return res.status(400).json({error: 'Username dan password wajib diisi'});
+
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
+    if(err) return res.status(500).json({error: 'Gagal memproses pendaftaran'});
+
+    const sql = 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)';
+    const params = [username.toLowerCase(), hashedPassword, 'admin'];
+
+    db.run(sql, params, function(err) {
+      if(err) {
+        if(err.message.includes('UNIQUE')) {
+          return res.status(400).json({error: 'Username admin sudah ada'});
+        }
+        return res.status(500).json({error: err.message});
+      }
+      
+      res.status(201).json({
+        message: 'Admin berhasil dibuat',
+        userId: this.lastID
+      });
+    });
+  });
+});
+
+// =======================================================
 // AUTH ROUTES (REGISTER, LOGIN, PROFILE)
 // =======================================================
 
@@ -106,7 +137,7 @@ app.post('/auth/register', (req, res) => {
   bcrypt.hash(password, 10, (err, hashedPassword) => {
     if (err) return res.status(500).json({ error: 'Gagal memproses pendaftaran' });
 
-    const sql = 'INSERT INTO users (username, password) VALUES (?, ?)';
+    const sql = 'INSERT INTO users (username, password role) VALUES (?, ?, ?)';
     const params = [username.toLowerCase(), hashedPassword];
 
     db.run(sql, params, function (err) {
@@ -147,7 +178,8 @@ app.post('/auth/login', (req, res) => {
       const payload = {
         user: {
           id: user.id,
-          username: user.username
+          username: user.username,
+          role: user.role
         }
       };
 
