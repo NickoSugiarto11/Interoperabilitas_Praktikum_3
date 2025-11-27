@@ -19,7 +19,7 @@ app.get("/", (req, res) => {
   res.json({ ok: true, service: "film-api" });
 });
 
-// AUTH ROUTES (Refactored for pg)
+// AUTH ROUTES
 
 app.post("/auth/register", async (req, res, next) => {
   const { username, password } = req.body;
@@ -116,11 +116,14 @@ app.post("/auth/login", async (req, res, next) => {
 });
 
 // MOVIES ROUTES
+
 app.get("/movies", async (req, res, next) => {
-  const sql = `SELECT m.id, m.title, m.year, d.id as directord_id, d.name as director_name
+  const sql = `
+  SELECT m.id, m.title, m.year, d.id as director_id, d.name as director_name
   FROM movies m
   LEFT JOIN directors d ON m.director_id = d.id
   ORDER BY m.id ASC`;
+
   try {
     const result = await db.query(sql);
     res.json(result.rows);
@@ -130,10 +133,12 @@ app.get("/movies", async (req, res, next) => {
 });
 
 app.get("/movies/:id", async (req, res, next) => {
-  const sql = `SELECT m.id, m.title, m.year, d.id as director_id, d.name as director_name
+  const sql = `
+  SELECT m.id, m.title, m.year, d.id as director_id, d.name as director_name
   FROM movies m
   LEFT JOIN directors d ON m.director_id = d.id
   WHERE m.id = $1`;
+
   try {
     const result = await db.query(sql, [req.params.id]);
     if (result.rows.length === 0) {
@@ -147,13 +152,16 @@ app.get("/movies/:id", async (req, res, next) => {
 
 app.post("/movies", authenticateToken, async (req, res, next) => {
   const { title, director_id, year } = req.body;
+
   if (!title || !director_id || !year) {
     return res
       .status(400)
       .json({ error: "Title, director_id, dan year harus diisi" });
   }
+
   const sql =
     "INSERT INTO movies (title, director_id, year) VALUES ($1, $2, $3) RETURNING *";
+
   try {
     const result = await db.query(sql, [title, director_id, year]);
     res.status(201).json(result.rows[0]);
@@ -167,8 +175,10 @@ app.put(
   [authenticateToken, authorizeRole("admin")],
   async (req, res, next) => {
     const { title, director_id, year } = req.body;
+
     const sql =
       "UPDATE movies SET title = $1, director_id = $2, year = $3 WHERE id = $4 RETURNING *";
+
     try {
       const result = await db.query(sql, [
         title,
@@ -176,9 +186,11 @@ app.put(
         year,
         req.params.id,
       ]);
+
       if (result.rowCount === 0) {
         return res.status(404).json({ error: "Film tidak ditemukan" });
       }
+
       res.json(result.rows[0]);
     } catch (err) {
       next(err);
@@ -191,11 +203,14 @@ app.delete(
   [authenticateToken, authorizeRole("admin")],
   async (req, res, next) => {
     const sql = "DELETE FROM movies WHERE id = $1 RETURNING *";
+
     try {
       const result = await db.query(sql, [req.params.id]);
-      if (result.roqCount === 0) {
+
+      if (result.rowCount === 0) {
         return res.status(404).json({ error: "Film tidak ditemukan" });
       }
+
       res.status(204).send();
     } catch (err) {
       next(err);
@@ -203,11 +218,9 @@ app.delete(
   }
 );
 
-// DIRECTORS ROUTES (TUGAS PRAKTIKUM)
-// Mahasiswa harus merefactor endpoint /directors dengan pola yang sama
+// Fallback & Error Handling
 
-//Fallback dan Error Handling
-app.user((req, res) => {
+app.use((req, res) => {
   res.status(404).json({ error: "Endpoint tidak ditemukan" });
 });
 
