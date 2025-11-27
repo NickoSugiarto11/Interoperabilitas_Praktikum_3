@@ -1,277 +1,221 @@
-require('dotenv').config(); // Memanggil file .env
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET;
-const {authenticateToken, authorixeRole} = require('./middleware/auth.js'); // Middleware autentikasi JWT
-const express = require('express');
-const cors = require('cors');
-const db = require('./database'); // Koneksi database SQLite
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const db = require("./db.js");
+const bcrypt = require("bcrypt.js");
+const jwt = require("jsonwebtoken");
+const { authenticateToken, authorizeRole } = require("./middleware/auth.js");
 
 const app = express();
-const port = process.env.PORT || 3100;
+const PORT = process.env.PORT || 3300;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// =======================================================
-// STATUS API
-// =======================================================
-app.get('/status', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is Running', timestamp: new Date() });
+// Routes
+app.get("/", (req, res) => {
+  res.json({ ok: true, service: "film-api" });
 });
 
-// =======================================================
-// MOVIES API (dengan autentikasi di POST, PUT, DELETE)
-// =======================================================
+// AUTH ROUTES (Refactored for pg)
 
-// GET semua movies (tanpa token)
-app.get('/movies', (req, res) => {
-  const sql = "SELECT * FROM movies ORDER BY id ASC";
-  db.all(sql, [], (err, rows) => {
-    if (err) return res.status(400).json({ error: err.message });
-    res.json({ message: "success", data: rows });
-  });
-});
-
-// GET movie by ID (tanpa token)
-app.get('/movies/:id', (req, res) => {
-  const sql = "SELECT * FROM movies WHERE id = ?";
-  const params = [req.params.id];
-  db.get(sql, params, (err, row) => {
-    if (err) return res.status(400).json({ error: err.message });
-    res.json({ message: "success", data: row });
-  });
-});
-
-// POST tambah movie (dengan token)
-app.post('/movies', authenticateToken, (req, res) => {
-  console.log('Request POST /movies oleh user:', req.user.username);
-  const { title, director, year } = req.body;
-
-  if (!title || !director || !year) {
-    return res.status(400).json({ error: 'title, director, dan year wajib diisi' });
-  }
-
-  const sql = "INSERT INTO movies (title, director, year) VALUES (?, ?, ?)";
-  const params = [title, director, year];
-  db.run(sql, params, function (err) {
-    if (err) return res.status(400).json({ error: err.message });
-    res.status(201).json({
-      message: "success",
-      data: { id: this.lastID, title, director, year }
-    });
-  });
-});
-
-// PUT update movie (dengan token)
-app.put('/movies/:id', authenticateToken, (req, res) => {
-  console.log('Request PUT /movies oleh user:', req.user.username);
-  const { title, director, year } = req.body;
-  const sql = "UPDATE movies SET title = ?, director = ?, year = ? WHERE id = ?";
-  const params = [title, director, year, req.params.id];
-
-  db.run(sql, params, function (err) {
-    if (err) return res.status(400).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: "Movie tidak ditemukan" });
-    res.json({ message: "success", data: { id: req.params.id, title, director, year } });
-  });
-});
-
-// DELETE movie (dengan token)
-app.delete('/movies/:id', authenticateToken, (req, res) => {
-  console.log('Request DELETE /movies oleh user:', req.user.username);
-  const sql = "DELETE FROM movies WHERE id = ?";
-  const params = [req.params.id];
-
-  db.run(sql, params, function (err) {
-    if (err) return res.status(400).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: "Movie tidak ditemukan" });
-    res.status(204).send();
-  });
-});
-
-// =======================================================
-// AUTH REGISTER ADMIN
-// =======================================================
-
-app.post('/auth/register-admin', (req, res) => {
-  const {username, password} = req.body;
-  if(!username || !password)
-    return res.status(400).json({error: 'Username dan password wajib diisi'});
-
-  bcrypt.hash(password, 10, (err, hashedPassword) => {
-    if(err) return res.status(500).json({error: 'Gagal memproses pendaftaran'});
-
-    const sql = 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)';
-    const params = [username.toLowerCase(), hashedPassword, 'admin'];
-
-    db.run(sql, params, function(err) {
-      if(err) {
-        if(err.message.includes('UNIQUE')) {
-          return res.status(400).json({error: 'Username admin sudah ada'});
-        }
-        return res.status(500).json({error: err.message});
-      }
-      
-      res.status(201).json({
-        message: 'Admin berhasil dibuat',
-        userId: this.lastID
-      });
-    });
-  });
-});
-
-// =======================================================
-// AUTH ROUTES (REGISTER, LOGIN, PROFILE)
-// =======================================================
-
-// REGISTER
-app.post('/auth/register', (req, res) => {
+app.post("/auth/register", async (req, res, next) => {
   const { username, password } = req.body;
 
   if (!username || !password || password.length < 6) {
-    return res.status(400).json({ error: 'Username dan password (min 6 karakter) wajib diisi' });
+    return res
+      .status(400)
+      .json({ error: "Username dan password (min 6 char) harus diisi" });
   }
 
-  bcrypt.hash(password, 10, (err, hashedPassword) => {
-    if (err) return res.status(500).json({ error: 'Gagal memproses pendaftaran' });
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    const sql = 'INSERT INTO users (username, password role) VALUES (?, ?, ?)';
-    const params = [username.toLowerCase(), hashedPassword];
+    const sql =
+      "INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id, username";
 
-    db.run(sql, params, function (err) {
-      if (err) {
-        if (err.message.includes('UNIQUE constraint')) {
-          return res.status(409).json({ error: 'Username sudah digunakan' });
-        }
-        return res.status(500).json({ error: 'Gagal menyimpan pengguna' });
-      }
+    const result = await db.query(sql, [
+      username.toLowerCase(),
+      hashedPassword,
+      "user",
+    ]);
 
-      res.status(201).json({
-        message: 'Registrasi berhasil',
-        userId: this.lastID
-      });
-    });
-  });
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    if (err.code === "23505") {
+      return res.status(409).json({ error: "Username sudah digunakan" });
+    }
+    next(err);
+  }
 });
 
-// LOGIN
-app.post('/auth/login', (req, res) => {
+app.post("/auth/register-admin", async (req, res, next) => {
   const { username, password } = req.body;
 
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username dan password harus diisi' });
+  if (!username || !password || password.length < 6) {
+    return res
+      .status(400)
+      .json({ error: "Username dan password (min 6 char) harus diisi" });
   }
 
-  const sql = "SELECT * FROM users WHERE username = ?";
-  db.get(sql, [username.toLowerCase()], (err, user) => {
-    if (err || !user) {
-      return res.status(401).json({ error: 'Kredensial tidak valid' });
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const sql =
+      "INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id, username";
+
+    const result = await db.query(sql, [
+      username.toLowerCase(),
+      hashedPassword,
+      "admin",
+    ]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    if (err.code === "23505") {
+      return res.status(409).json({ error: "Username sudah digunakan" });
+    }
+    next(err);
+  }
+});
+
+app.post("/auth/login", async (req, res, next) => {
+  const { username, password } = req.body;
+
+  try {
+    const sql = "SELECT * FROM users WHERE username = $1";
+    const result = await db.query(sql, [username.toLowerCase()]);
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(401).json({ error: "Kredensial tidak valid" });
     }
 
-    bcrypt.compare(password, user.password, (err, isMatch) => {
-      if (err || !isMatch) {
-        return res.status(401).json({ error: 'Kredensial tidak valid' });
-      }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Kredensial tidak valid" });
+    }
 
-      const payload = {
-        user: {
-          id: user.id,
-          username: user.username,
-          role: user.role
-        }
-      };
+    const payload = {
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+      },
+    };
 
-      jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
-        if (err) return res.status(500).json({ error: 'Gagal membuat token' });
-        res.json({ message: 'Login berhasil', token });
-      });
-    });
-  });
-});
-
-// PROFILE (dengan token)
-app.get("/auth/profile", authenticateToken, (req, res) => {
-  res.json({
-    message: "Profil pengguna berhasil diambil",
-    user: req.user,
-  });
-});
-
-// =======================================================
-// DIRECTORS API
-// =======================================================
-
-// GET semua directors (tanpa token)
-app.get('/directors', (req, res) => {
-  const sql = "SELECT * FROM directors ORDER BY id ASC";
-  db.all(sql, [], (err, rows) => {
-    if (err) return res.status(400).json({ error: err.message });
-    res.json({ message: "success", data: rows });
-  });
-});
-
-// GET director by ID (tanpa token)
-app.get('/directors/:id', (req, res) => {
-  const sql = "SELECT * FROM directors WHERE id = ?";
-  const params = [req.params.id];
-  db.get(sql, params, (err, row) => {
-    if (err) return res.status(400).json({ error: err.message });
-    res.json({ message: "success", data: row });
-  });
-});
-
-// POST tambah director (dengan token)
-app.post('/directors', authenticateToken, (req, res) => {
-  const { name, birth_year } = req.body;
-  if (!name || !birth_year) {
-    return res.status(400).json({ error: 'name dan birth_year wajib diisi' });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+    res.json({ message: "Login berhasil", token: token });
+  } catch (err) {
+    next(err);
   }
-  const sql = "INSERT INTO directors (name, birth_year) VALUES (?, ?)";
-  const params = [name, birth_year];
-  db.run(sql, params, function (err) {
-    if (err) return res.status(400).json({ error: err.message });
-    res.status(201).json({
-      message: "success",
-      data: { id: this.lastID, name, birth_year }
-    });
-  });
 });
 
-// PUT update director (dengan token)
-app.put('/directors/:id', authenticateToken, (req, res) => {
-  const { name, birth_year } = req.body;
-  const sql = "UPDATE directors SET name = ?, birth_year = ? WHERE id = ?";
-  const params = [name, birth_year, req.params.id];
-  db.run(sql, params, function (err) {
-    if (err) return res.status(400).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: "Director tidak ditemukan" });
-    res.json({ message: "success", data: { id: req.params.id, name, birth_year } });
-  });
+// MOVIES ROUTES
+app.get("/movies", async (req, res, next) => {
+  const sql = `SELECT m.id, m.title, m.year, d.id as directord_id, d.name as director_name
+  FROM movies m
+  LEFT JOIN directors d ON m.director_id = d.id
+  ORDER BY m.id ASC`;
+  try {
+    const result = await db.query(sql);
+    res.json(result.rows);
+  } catch (err) {
+    next(err);
+  }
 });
 
-// DELETE director (dengan token)
-app.delete('/directors/:id', authenticateToken, (req, res) => {
-  const sql = "DELETE FROM directors WHERE id = ?";
-  const params = [req.params.id];
-  db.run(sql, params, function (err) {
-    if (err) return res.status(400).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: "Director tidak ditemukan" });
-    res.status(204).send();
-  });
+app.get("/movies/:id", async (req, res, next) => {
+  const sql = `SELECT m.id, m.title, m.year, d.id as director_id, d.name as director_name
+  FROM movies m
+  LEFT JOIN directors d ON m.director_id = d.id
+  WHERE m.id = $1`;
+  try {
+    const result = await db.query(sql, [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Film tidak ditemukan" });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
 });
 
-// =======================================================
-// ERROR HANDLER
-// =======================================================
-app.use((req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
+app.post("/movies", authenticateToken, async (req, res, next) => {
+  const { title, director_id, year } = req.body;
+  if (!title || !director_id || !year) {
+    return res
+      .status(400)
+      .json({ error: "Title, director_id, dan year harus diisi" });
+  }
+  const sql =
+    "INSERT INTO movies (title, director_id, year) VALUES ($1, $2, $3) RETURNING *";
+  try {
+    const result = await db.query(sql, [title, director_id, year]);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    next(err);
+  }
 });
 
-// =======================================================
-// START SERVER
-// =======================================================
-app.listen(port, () => {
-  console.log(`Server berjalan di http://localhost:${port}`);
+app.put(
+  "/movies/:id",
+  [authenticateToken, authorizeRole("admin")],
+  async (req, res, next) => {
+    const { title, director_id, year } = req.body;
+    const sq =
+      "UPDATE movies SET title = $1, director_id = $2, year = $3 WHERE id = $4 RETURNING *";
+    try {
+      const result = await db.query(sql, [
+        title,
+        director_id,
+        year,
+        req.params.id,
+      ]);
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Film tidak ditemukan" });
+      }
+      res.json(result.rows[0]);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+app.delete(
+  "/movies/:id",
+  [authenticateToken, authorizeRole("admin")],
+  async (req, res, next) => {
+    const sql = "DELETE FROM movies WHERE id = $1 RETURNING *";
+    try {
+      const result = await db.query(sql, [req.params.id]);
+      if (result.roqCount === 0) {
+        return res.status(404).json({ error: "Film tidak ditemukan" });
+      }
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// DIRECTORS ROUTES (TUGAS PRAKTIKUM)
+// Mahasiswa harus merefactor endpoint /directors dengan pola yang sama
+
+//Fallback dan Error Handling
+app.user((req, res) => {
+  res.status(404).json({ error: "Endpoint tidak ditemukan" });
+});
+
+app.use((err, req, res, next) => {
+  console.error("[SERVER ERROR]", err.stack);
+  res.status(500).json({ error: "Terjadi kesalahan pada server" });
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server berjalan di http://localhost:${PORT}`);
 });
