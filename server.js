@@ -167,7 +167,7 @@ app.put(
   [authenticateToken, authorizeRole("admin")],
   async (req, res, next) => {
     const { title, director_id, year } = req.body;
-    const sq =
+    const sql =
       "UPDATE movies SET title = $1, director_id = $2, year = $3 WHERE id = $4 RETURNING *";
     try {
       const result = await db.query(sql, [
